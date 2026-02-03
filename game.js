@@ -205,6 +205,11 @@ class MemeGame {
         this.currentTimeLimit = 5000;
         this.memeTimer = null;
 
+        // Cheat Detection
+        this.lastSwipeTime = 0;
+        this.cheatStrikes = 0;
+        this.isCheater = false;
+
         // Meme data
         this.memes = [];
         this.currentMeme = null;
@@ -597,6 +602,26 @@ class MemeGame {
             clearTimeout(this.memeTimer);
             this.memeTimer = null;
         }
+
+        // Check for cheats BEFORE processing
+        const now = Date.now();
+        const timeDiff = now - this.lastSwipeTime;
+        this.lastSwipeTime = now;
+
+        if (timeDiff < 150) { // Inhuman speed (<150ms)
+            this.cheatStrikes++;
+            console.warn(`⚠️ Suspicious swipe detected! (${timeDiff}ms) - Strike ${this.cheatStrikes}/5`);
+
+            if (this.cheatStrikes >= 5) {
+                this.triggerBSOD();
+                return;
+            }
+        } else {
+            // Cooldown strikes if playing normally
+            this.cheatStrikes = Math.max(0, this.cheatStrikes - 0.5);
+        }
+
+        if (this.isCheater) return;
 
         // Animate out
         const offX = direction === 'right' ? 500 : -500;
@@ -1148,6 +1173,33 @@ class MemeGame {
             `;
         }).join('');
     }
+
+    triggerBSOD() {
+        this.isCheater = true;
+        this.state = 'gameover'; // Stop game loop
+
+        // Nuke score
+        this.score = -69420;
+        this.highScore = -69420;
+        localStorage.setItem('brainrotHighScore', this.highScore.toString());
+
+        // Play error sound and simulated spam
+        if (typeof soundEngine !== 'undefined') {
+            for (let i = 0; i < 8; i++) {
+                setTimeout(() => soundEngine.wrong(), i * 150);
+            }
+        }
+
+        // Show BSOD
+        const bsod = document.getElementById('bsod-overlay');
+        if (bsod) {
+            bsod.classList.add('active');
+
+            // Push shame to global leaderboard
+            leaderboard.addEntry("CHEATER_BOT_9000", -69420);
+        }
+    }
+
 
     // ========== ORACLE MODE ==========
 
