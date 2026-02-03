@@ -43,9 +43,25 @@
                     Become one with the rot.
                 </p>
 
+                <!-- Username Section -->
+                <div class="username-section">
+                    <label class="username-label">YOUR GAMER TAG</label>
+                    <div class="username-input-row">
+                        <input type="text" id="username-input" class="username-input" placeholder="Enter username..."
+                            maxlength="15">
+                        <button id="random-name-btn" class="btn-icon" title="Generate random name">🎲</button>
+                    </div>
+                </div>
+
                 <button id="start-btn" class="btn-primary">
                     <span>🎮</span>
                     <span>Start Game</span>
+                </button>
+
+                <!-- Leaderboard Button -->
+                <button id="leaderboard-btn" class="btn-secondary">
+                    <span>🏆</span>
+                    <span>Leaderboard</span>
                 </button>
 
                 <div class="instructions">
@@ -115,29 +131,55 @@
                 </div>
             </div>
 
-            <!-- AI Panel -->
-            <div id="ai-panel" class="ai-panel">
-                <div class="ai-header">
-                    <span class="icon">🤖</span>
-                    <span class="title">Neural Meme Analyzer</span>
-                    <span class="status">Learning</span>
+            <!-- VIBE CHECK AI Panel -->
+            <div id="ai-panel" class="vibe-panel">
+                <div class="vibe-header">
+                    <span class="vibe-title">⚡ VIBE CHECK ⚡</span>
                 </div>
-                <canvas id="neural-canvas" class="neural-viz"></canvas>
-                <div class="analysis-bars">
-                    <div class="analysis-row dank">
-                        <span class="label">Dankness</span>
-                        <div class="bar-track">
-                            <div id="dankness-bar" class="bar-fill"></div>
-                        </div>
-                        <span id="dankness-value" class="value">0%</span>
+
+                <!-- Main Vibe Display -->
+                <div class="vibe-main">
+                    <div class="vibe-emoji-container">
+                        <div class="vibe-emoji" id="vibe-emoji">🤔</div>
+                        <div class="vibe-ring"></div>
                     </div>
-                    <div class="analysis-row normie">
-                        <span class="label">Normie</span>
-                        <div class="bar-track">
-                            <div id="normie-bar" class="bar-fill"></div>
-                        </div>
-                        <span id="normie-value" class="value">0%</span>
+                    <div class="vibe-verdict" id="vibe-verdict">Scanning vibes...</div>
+                </div>
+
+                <!-- Vibe Gauge -->
+                <div class="vibe-gauge">
+                    <div class="gauge-labels">
+                        <span>💀</span>
+                        <span>😐</span>
+                        <span>🔥</span>
                     </div>
+                    <div class="gauge-track">
+                        <div class="gauge-fill" id="vibe-gauge-fill"></div>
+                        <div class="gauge-pointer" id="gauge-pointer"></div>
+                    </div>
+                    <div class="gauge-text">
+                        <span>TRASH</span>
+                        <span>MID</span>
+                        <span>FIRE</span>
+                    </div>
+                </div>
+
+                <!-- Aura Reading -->
+                <div class="aura-section">
+                    <span class="aura-label">AURA:</span>
+                    <span class="aura-orb" id="aura-orb">🟣</span>
+                    <span class="aura-text" id="aura-text">Mysterious</span>
+                </div>
+
+                <!-- Thought Ticker -->
+                <div class="thought-ticker">
+                    <span class="ticker-icon">💭</span>
+                    <span id="ai-thoughts" class="ticker-text">Booting neural network...</span>
+                </div>
+
+                <!-- Stats -->
+                <div class="vibe-stats">
+                    <span>📊 <strong id="train-count">0</strong> vibes checked</span>
                 </div>
             </div>
 
@@ -179,6 +221,26 @@
                     <span>🔄</span>
                     <span>Play Again</span>
                 </button>
+            </div>
+        </div>
+
+        <!-- ========== LEADERBOARD MODAL ========== -->
+        <div id="leaderboard-modal" class="modal">
+            <div class="modal-content leaderboard-modal">
+                <div class="modal-header">
+                    <h2 class="modal-title">🏆 HALL OF BRAINROT 🏆</h2>
+                    <button id="close-leaderboard" class="modal-close">✕</button>
+                </div>
+                <div class="leaderboard-container">
+                    <div id="leaderboard-list" class="leaderboard-list">
+                        <!-- Leaderboard entries will be inserted here -->
+                    </div>
+                    <div id="leaderboard-empty" class="leaderboard-empty">
+                        <span>🦗</span>
+                        <p>No scores yet! Be the first to enter the hall.</p>
+                    </div>
+                </div>
+                <button id="clear-leaderboard" class="btn-danger">🗑️ Clear Leaderboard</button>
             </div>
         </div>
     </div>

@@ -97,7 +97,8 @@ class MemeGame {
             highScoreDisplay: document.getElementById('high-score'),
             verdict: document.getElementById('verdict'),
             finalBrain: document.getElementById('final-brain'),
-            glitchOverlay: document.getElementById('glitch-overlay')
+            glitchOverlay: document.getElementById('glitch-overlay'),
+            aiThoughts: document.getElementById('ai-thoughts')
         };
 
         // Swipe handling
@@ -111,6 +112,74 @@ class MemeGame {
 
         // Sound
         this.soundEnabled = true;
+
+        // AI Thoughts - weird phrases that rotate fast
+        this.aiThoughts = [
+            // Analysis phrases
+            "Detecting pixel-level irony...",
+            "Scanning for deep-fried essence...",
+            "Quantifying brainrot vectors...",
+            "Measuring serotonin impact...",
+            "Analyzing cursed energy levels...",
+            "Processing unhinged wavelengths...",
+            "Calculating ratio probability...",
+            "Detecting bottom text energy...",
+            "Parsing compressed jpeg artifacts...",
+            "Evaluating chaos coefficient...",
+            // Weird observations
+            "This meme hits different at 3am",
+            "Skibidi toilet vibes detected",
+            "Ohio level: concerning",
+            "Sigma grindset energy: MAXIMUM",
+            "Rizz factor: off the charts",
+            "No cap detected. All fax.",
+            "Gyatt readings are elevated",
+            "Sussy baka probability: 74.2%",
+            "This goes hard. May screenshot.",
+            "Certified hood classic potential",
+            // Technical nonsense
+            "Recalibrating dank matrices...",
+            "Fanum taxing neural weights...",
+            "Mewing optimization in progress",
+            "Edge detection: very edgy",
+            "Running cope.exe subroutine...",
+            "Initializing ratio protocols...",
+            "Deploying based classifiers...",
+            "Slay-factor analysis complete",
+            "Compressing into JPEG: 🗿",
+            "Memory: low (just like quality)",
+            // Random observations
+            "Bold move. Let's see.",
+            "The council will decide...",
+            "Your opinion: noted 📝",
+            "Interesting. Very interesting.",
+            "Adding to neural database...",
+            "Cross-referencing with cursed_images.db",
+            "Meme vintage: circa 2024",
+            "Caption game: questionable",
+            "Where humor. WHERE HUMOR???",
+            "This is giving... something",
+            // More chaotic
+            "erm what the sigma",
+            "real 🗣️🔥",
+            "Lowkey valid tbh fr fr",
+            "Processing delulu levels...",
+            "Checking for unregistered rizz",
+            "Aura points: recalculating",
+            "NPC behavior scanning...",
+            "Main character energy: maybe",
+            "L + ratio + neural rejected",
+            "W take or massive L?",
+            // System-like
+            "WARNING: maximum brainrot",
+            "ALERT: meme is too powerful",
+            "STATUS: neurons activated",
+            "ERROR: too based to classify",
+            "NOTICE: touch grass recommended",
+            "CAUTION: chronically online",
+        ];
+        this.thoughtIndex = 0;
+        this.thoughtInterval = null;
 
         // Initialize
         this.init();
@@ -353,29 +422,93 @@ class MemeGame {
     }
 
     updateAIDisplay() {
-        if (!this.currentMeme || !this.neuralNet) return;
+        if (!this.currentMeme) return;
 
         try {
-            const prediction = this.neuralNet.predict(this.currentMeme);
-            const dankPercent = Math.round(prediction.dank * 100);
-            const normiePercent = Math.round(prediction.normie * 100);
+            let vibeScore = 50; // 0 = trash, 50 = mid, 100 = fire
 
-            if (this.elements.danknessBar) {
-                this.elements.danknessBar.style.width = `${dankPercent}%`;
-            }
-            if (this.elements.normieBar) {
-                this.elements.normieBar.style.width = `${normiePercent}%`;
-            }
-            if (this.elements.danknessValue) {
-                this.elements.danknessValue.textContent = `${dankPercent}%`;
-            }
-            if (this.elements.normieValue) {
-                this.elements.normieValue.textContent = `${normiePercent}%`;
+            if (this.neuralNet) {
+                const prediction = this.neuralNet.predict(this.currentMeme);
+                vibeScore = Math.round(prediction.dank * 100);
             }
 
-            if (this.neuralViz) {
-                const networkState = this.neuralNet.getNetworkState();
-                this.neuralViz.updateFromNetwork(networkState, prediction);
+            // Update gauge pointer position (0% = left, 100% = right)
+            const gaugePointer = document.getElementById('gauge-pointer');
+            if (gaugePointer) {
+                gaugePointer.style.left = `${vibeScore}%`;
+            }
+
+            // Update emoji and verdict based on vibe
+            const vibeEmoji = document.getElementById('vibe-emoji');
+            const vibeVerdict = document.getElementById('vibe-verdict');
+
+            let emoji = '🤔';
+            let verdict = 'SCANNING...';
+            let verdictClass = '';
+
+            if (vibeScore >= 75) {
+                emoji = '🔥';
+                verdict = 'ABSOLUTELY FIRE';
+                verdictClass = 'fire';
+            } else if (vibeScore >= 60) {
+                emoji = '😎';
+                verdict = 'PRETTY VALID';
+                verdictClass = 'fire';
+            } else if (vibeScore >= 40) {
+                emoji = '😐';
+                verdict = 'MID AF';
+                verdictClass = 'mid';
+            } else if (vibeScore >= 20) {
+                emoji = '😬';
+                verdict = 'NOT IT CHIEF';
+                verdictClass = 'trash';
+            } else {
+                emoji = '💀';
+                verdict = 'CRINGE ALERT';
+                verdictClass = 'trash';
+            }
+
+            if (vibeEmoji) {
+                vibeEmoji.textContent = emoji;
+                vibeEmoji.style.animation = 'none';
+                vibeEmoji.offsetHeight; // Reflow
+                vibeEmoji.style.animation = 'emoji-bounce 0.5s ease';
+            }
+
+            if (vibeVerdict) {
+                vibeVerdict.textContent = verdict;
+                vibeVerdict.className = 'vibe-verdict ' + verdictClass;
+            }
+
+            // Update aura based on vibe
+            const auraOrb = document.getElementById('aura-orb');
+            const auraText = document.getElementById('aura-text');
+
+            const auras = [
+                { min: 0, orb: '⬛', text: 'Void Energy', color: '#2d3436' },
+                { min: 15, orb: '🔴', text: 'Cursed Aura', color: '#d63031' },
+                { min: 30, orb: '🟠', text: 'Chaotic Vibes', color: '#e17055' },
+                { min: 45, orb: '🟡', text: 'Neutral Zone', color: '#fdcb6e' },
+                { min: 60, orb: '🟢', text: 'Based Energy', color: '#00b894' },
+                { min: 75, orb: '🔵', text: 'Sigma Aura', color: '#0984e3' },
+                { min: 90, orb: '🟣', text: 'God-Tier Vibes', color: '#6c5ce7' }
+            ];
+
+            let currentAura = auras[0];
+            for (const aura of auras) {
+                if (vibeScore >= aura.min) currentAura = aura;
+            }
+
+            if (auraOrb) auraOrb.textContent = currentAura.orb;
+            if (auraText) {
+                auraText.textContent = currentAura.text;
+                auraText.style.color = currentAura.color;
+            }
+
+            // Update training count
+            const trainCount = document.getElementById('train-count');
+            if (trainCount && this.neuralNet) {
+                trainCount.textContent = this.neuralNet.trainingData?.length || 0;
             }
         } catch (e) {
             console.warn('AI update error:', e);
@@ -400,11 +533,48 @@ class MemeGame {
         setTimeout(() => document.body.classList.remove('shake'), 400);
     }
 
+    // Update AI thought display with rotating weird phrases
+    updateAIThought() {
+        if (!this.elements.aiThoughts) return;
+
+        // Pick a semi-random phrase (weighted toward sequential for coherence)
+        if (Math.random() > 0.3) {
+            this.thoughtIndex = (this.thoughtIndex + 1) % this.aiThoughts.length;
+        } else {
+            this.thoughtIndex = Math.floor(Math.random() * this.aiThoughts.length);
+        }
+
+        this.elements.aiThoughts.textContent = this.aiThoughts[this.thoughtIndex];
+        this.elements.aiThoughts.style.animation = 'none';
+        this.elements.aiThoughts.offsetHeight; // Force reflow
+        this.elements.aiThoughts.style.animation = 'thought-fade 0.3s ease';
+    }
+
+    // Start rotating AI thoughts
+    startAIThoughts() {
+        if (this.thoughtInterval) clearInterval(this.thoughtInterval);
+        this.updateAIThought();
+        this.thoughtInterval = setInterval(() => this.updateAIThought(), 400);
+    }
+
+    // Stop AI thoughts
+    stopAIThoughts() {
+        if (this.thoughtInterval) {
+            clearInterval(this.thoughtInterval);
+            this.thoughtInterval = null;
+        }
+        if (this.elements.aiThoughts) {
+            this.elements.aiThoughts.textContent = "Neural network idle...";
+        }
+    }
+
     glitchEffect() {
         if (this.elements.glitchOverlay) {
             this.elements.glitchOverlay.classList.add('active');
             setTimeout(() => this.elements.glitchOverlay.classList.remove('active'), 150);
         }
+        // Also update thought on glitch
+        this.updateAIThought();
     }
 
     spawnConfetti() {
@@ -524,6 +694,7 @@ class MemeGame {
         }
 
         this.showScreen('game');
+        this.startAIThoughts();
         this.loadNextMeme();
         this.startTimer();
     }
@@ -550,6 +721,7 @@ class MemeGame {
     endGame() {
         if (this.timerInterval) clearInterval(this.timerInterval);
         if (this.memeTimer) clearTimeout(this.memeTimer);
+        this.stopAIThoughts();
 
         this.state = 'gameover';
 
