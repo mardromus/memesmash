@@ -156,6 +156,7 @@ class RealTimeLeaderboard {
             return true;
         } catch (e) {
             console.error("Firebase push failed:", e);
+            alert(`⚠️ LEADERBOARD ERROR ⚠️\n\nCould not save score: ${e.message}\n\nCheck your Firebase Rules in the Console!`);
             return false;
         }
     }
