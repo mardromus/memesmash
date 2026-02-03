@@ -280,6 +280,17 @@ body {
     border-color: var(--success);
 }
 
+#leaderboard-btn {
+    width: 100%;
+    max-width: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin: 20px auto 30px;
+    /* Centered with margin */
+}
+
 /* =========================================
    GAME SCREEN
    ========================================= */
@@ -1070,21 +1081,103 @@ body.shake {
 /* Confetti */
 .confetti {
     position: fixed;
-    font-size: 1.8rem;
-    animation: confetti-fall 2s ease-out forwards;
+    font-size: 2rem;
+    animation: confetti-fall 2.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
     pointer-events: none;
     z-index: 200;
+    filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.5));
 }
 
 @keyframes confetti-fall {
     0% {
         opacity: 1;
-        transform: translateY(0) rotate(0deg);
+        transform: translateY(0) rotate(0deg) scale(1);
+    }
+
+    50% {
+        opacity: 0.8;
+        transform: translateY(50vh) rotate(360deg) scale(1.2);
     }
 
     100% {
         opacity: 0;
-        transform: translateY(100vh) rotate(720deg);
+        transform: translateY(100vh) rotate(720deg) scale(0.5);
+    }
+}
+
+/* Screen Shake */
+body.shake {
+    animation: screen-shake 0.4s ease-in-out;
+}
+
+@keyframes screen-shake {
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    10%,
+    30%,
+    50%,
+    70%,
+    90% {
+        transform: translateX(-8px) rotate(-0.5deg);
+    }
+
+    20%,
+    40%,
+    60%,
+    80% {
+        transform: translateX(8px) rotate(0.5deg);
+    }
+}
+
+/* Glow Pulse for high combos */
+.glow-pulse {
+    animation: glow-pulse 0.5s ease-out;
+}
+
+@keyframes glow-pulse {
+    0% {
+        box-shadow: 0 0 20px var(--accent);
+    }
+
+    100% {
+        box-shadow: 0 0 0 var(--accent);
+    }
+}
+
+/* Fire effect for super combos */
+.on-fire {
+    animation: on-fire 0.3s ease-in-out infinite alternate;
+}
+
+@keyframes on-fire {
+    from {
+        filter: brightness(1) hue-rotate(0deg);
+    }
+
+    to {
+        filter: brightness(1.2) hue-rotate(10deg);
+    }
+}
+
+/* Timer warning state */
+.timer-warning {
+    animation: timer-pulse 0.5s ease-in-out infinite;
+}
+
+@keyframes timer-pulse {
+
+    0%,
+    100% {
+        background: var(--danger);
+    }
+
+    50% {
+        background: #ff2222;
+        box-shadow: 0 0 20px var(--danger);
     }
 }
 
@@ -1446,4 +1539,233 @@ body.shake {
 
 .leaderboard-empty p {
     font-size: 0.9rem;
+}
+
+/* =========================================
+   SETTINGS / TOGGLES
+   ========================================= */
+
+.settings-row {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+}
+
+.toggle-switch-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 8px 16px;
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
+}
+
+.toggle-label {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.toggle-switch {
+    position: relative;
+    width: 48px;
+    height: 24px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--bg-tertiary);
+    transition: .4s;
+    border-radius: 24px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked+.slider {
+    background-color: var(--danger);
+    /* Red for sensitive mode */
+}
+
+input:checked+.slider:before {
+    transform: translateX(24px);
+}
+
+/* Game Mode Buttons */
+
+.game-mode-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.btn-oracle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 16px 28px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #fff;
+    background: linear-gradient(135deg, #9b59b6 0%, #6c5ce7 50%, #a855f7 100%);
+    border: none;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 20px rgba(155, 89, 182, 0.4);
+}
+
+.btn-oracle:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 8px 30px rgba(155, 89, 182, 0.6);
+}
+
+/* =========================================
+   GAME OVER LEADERBOARD
+   ========================================= */
+
+.gameover-leaderboard {
+    margin: 20px 0;
+    padding: 16px;
+    background: var(--bg-secondary);
+    border-radius: 16px;
+    border: 1px solid var(--border-color);
+    width: 100%;
+    max-width: 350px;
+}
+
+.gameover-leaderboard .leaderboard-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 12px;
+    background: linear-gradient(90deg, #FFD700, #FFA500);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.mini-leaderboard {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.mini-leaderboard .leaderboard-entry {
+    padding: 8px 12px;
+    font-size: 0.85rem;
+}
+
+.mini-leaderboard .entry-rank {
+    font-size: 0.9rem;
+}
+
+.mini-leaderboard .entry-score {
+    font-size: 0.85rem;
+}
+
+/* =========================================
+   ORACLE SCREEN
+   ========================================= */
+
+.oracle-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 30px 20px;
+    max-width: 500px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.oracle-header {
+    margin-bottom: 24px;
+}
+
+/* Global Leaderboard Styles */
+.gameover-leaderboard {
+    margin: 20px 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.mini-leaderboard {
+    width: 100%;
+    max-width: 400px;
+    /* Limit width for better centering appearance */
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.leaderboard-entry {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 10px 15px;
+    border-radius: 12px;
+    font-family: 'Inter', sans-serif;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.leaderboard-entry.top-1 {
+    border-color: #ffd700;
+    background: rgba(255, 215, 0, 0.1);
+}
+
+.leaderboard-entry.top-2 {
+    border-color: #c0c0c0;
+    background: rgba(192, 192, 192, 0.1);
+}
+
+.leaderboard-entry.top-3 {
+    border-color: #cd7f32;
+    background: rgba(205, 127, 50, 0.1);
+}
+
+.entry-rank {
+    font-weight: bold;
+    width: 30px;
+}
+
+.entry-name {
+    flex-grow: 1;
+    text-align: left;
+    padding-left: 10px;
+    font-weight: 500;
+}
+
+.entry-score {
+    font-family: 'Orbitron', monospace;
+    color: var(--accent);
 }

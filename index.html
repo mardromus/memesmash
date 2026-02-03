@@ -12,7 +12,38 @@
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Orbitron:wght@700;900&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-</head>
+
+    <!-- Firebase SDK & Config -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
+        import { getDatabase, ref, push, onValue, query, orderByChild, limitToLast }
+            from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAsxNan2vVwhEB9tqfa6bdCjbtWj6rhXMI",
+            authDomain: "memesmash-959ad.firebaseapp.com",
+            projectId: "memesmash-959ad",
+            storageBucket: "memesmash-959ad.firebasestorage.app",
+            messagingSenderId: "1057952159779",
+            appId: "1:1057952159779:web:6283302e2410a2f900f996",
+            measurementId: "G-R7CJR1L9NP"
+        };
+
+        try {
+            const app = initializeApp(firebaseConfig);
+            const analytics = getAnalytics(app);
+            const db = getDatabase(app);
+
+            // Expose to window for game.js to access
+            window.firebaseArgs = {
+                db, ref, push, onValue, query, orderByChild, limitToLast
+            };
+            console.log("🔥 Firebase initialized!");
+        } catch (e) {
+            console.error("Firebase init failed:", e);
+        }
+    </script>
 
 <body>
     <!-- Background -->
@@ -53,15 +84,28 @@
                     </div>
                 </div>
 
-                <button id="start-btn" class="btn-primary">
-                    <span>🎮</span>
-                    <span>Start Game</span>
-                </button>
+                <div class="game-mode-buttons">
+                    <button id="start-btn" class="btn-primary">
+                        <span>🎮</span>
+                        <span>ENTER THE ARENA</span>
+                    </button>
+                </div>
+
+                <!-- Settings Row -->
+                <div class="settings-row">
+                    <div class="toggle-switch-container">
+                        <span class="toggle-label">🔞 Sensitive Content</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="sensitive-toggle">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
 
                 <!-- Leaderboard Button -->
                 <button id="leaderboard-btn" class="btn-secondary">
                     <span>🏆</span>
-                    <span>Leaderboard</span>
+                    <span>Global Leaderboard</span>
                 </button>
 
                 <div class="instructions">
@@ -217,10 +261,25 @@
                     <p id="verdict" class="verdict-text">Your brainrot level has been assessed...</p>
                 </div>
 
-                <button id="restart-btn" class="btn-primary">
-                    <span>🔄</span>
-                    <span>Play Again</span>
-                </button>
+                <!-- Inline Leaderboard on Game Over -->
+                <div class="gameover-leaderboard">
+                    <h3 class="leaderboard-title">🏆 GLOBAL RANKING</h3>
+                    <div id="gameover-leaderboard-list" class="mini-leaderboard">
+                        <!-- Top 5 entries shown here -->
+                    </div>
+                </div>
+
+                <div class="gameover-buttons">
+                    <button id="restart-btn" class="btn-primary">
+                        <span>🔄</span>
+                        <span>Play Again</span>
+                    </button>
+
+                    <button id="home-btn" class="btn-secondary">
+                        <span>🏠</span>
+                        <span>Main Menu</span>
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -245,6 +304,7 @@
         </div>
     </div>
 
+    <script src="sounds.js"></script>
     <script src="ai-viz.js"></script>
     <script src="game.js"></script>
 </body>

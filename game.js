@@ -37,10 +37,158 @@ class ThemeManager {
 // Initialize theme
 const themeManager = new ThemeManager();
 
+// =========================================
+// USERNAME GENERATOR - Cool random gamer tags
+// =========================================
+class UsernameGenerator {
+    constructor() {
+        this.prefixes = [
+            'Sigma', 'Based', 'Dank', 'Cursed', 'Blessed', 'Mega', 'Ultra',
+            'Dark', 'Chaos', 'Giga', 'Hyper', 'Neo', 'Cyber', 'Astral',
+            'Void', 'Shadow', 'Cosmic', 'Epic', 'Legendary', 'Mythic',
+            'Turbo', 'Alpha', 'Omega', 'Prime', 'Elite', 'Quantum'
+        ];
+
+        this.cores = [
+            'Brain', 'Meme', 'Vibe', 'Rot', 'Lord', 'King', 'Chad',
+            'Wizard', 'Ninja', 'Slayer', 'Hunter', 'Master', 'Sage',
+            'Beast', 'Wolf', 'Dragon', 'Phoenix', 'Goat', 'Legend',
+            'Gamer', 'Demon', 'Angel', 'Ghost', 'Reaper', 'Sensei'
+        ];
+
+        this.suffixes = [
+            '420', '69', '9000', 'X', 'XD', 'Pro', 'God', 'Boss',
+            '777', '999', 'Max', 'Ultra', 'Prime', 'Elite', 'King',
+            'Jr', 'Sr', 'III', 'IV', 'V', 'OG', 'TTV', 'YT'
+        ];
+    }
+
+    generate() {
+        const usePrefix = Math.random() > 0.3;
+        const useSuffix = Math.random() > 0.4;
+
+        const prefix = usePrefix ? this.prefixes[Math.floor(Math.random() * this.prefixes.length)] : '';
+        const core = this.cores[Math.floor(Math.random() * this.cores.length)];
+        const suffix = useSuffix ? this.suffixes[Math.floor(Math.random() * this.suffixes.length)] : '';
+
+        return `${prefix}${core}${suffix}`.substring(0, 15);
+    }
+}
+
+// =========================================
+// LEADERBOARD SYSTEM - Simulated Global
+// =========================================
+// =========================================
+// LEADERBOARD SYSTEM - Firebase Real-Time
+// =========================================
+class RealTimeLeaderboard {
+    constructor() {
+        this.localEntries = [];
+        this.initialized = false;
+
+        // Wait for Firebase to be ready (it's loaded as module)
+        this.checkFirebase();
+    }
+
+    checkFirebase() {
+        if (window.firebaseArgs) {
+            this.init(window.firebaseArgs);
+        } else {
+            console.log("Waiting for Firebase...");
+            setTimeout(() => this.checkFirebase(), 500);
+        }
+    }
+
+    init({ db, ref, onValue, query, orderByChild, limitToLast }) {
+        this.db = db;
+        this.scoresRef = ref(db, 'scores');
+        this.initialized = true;
+        this.listenForUpdates(onValue, query, orderByChild, limitToLast);
+    }
+
+    listenForUpdates(onValue, query, orderByChild, limitToLast) {
+        // Query top 50 scores by score (Firebase sorts ascending)
+        const topScoresQuery = query(
+            this.scoresRef,
+            orderByChild('score'),
+            limitToLast(50)
+        );
+
+        onValue(topScoresQuery, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                // Firebase returns object keys; convert to array
+                const entries = Object.values(data);
+                // Sort descending (highest first)
+                this.localEntries = entries.sort((a, b) => b.score - a.score);
+                console.log(`🔥 Leaderboard updated: ${this.localEntries.length} entries`);
+
+                // If leaderboard modal is open, re-render it
+                if (document.getElementById('leaderboard-modal')?.classList.contains('active')) {
+                    // We need to access the game instance to rerender, strictly speaking
+                    // But we can trigger a custom event or let the game logic handle it if polled
+                    // Simplest hack: re-call render if game instance is global
+                    if (window.game && window.game.renderLeaderboard) {
+                        window.game.renderLeaderboard();
+                    }
+                }
+            } else {
+                this.localEntries = [];
+            }
+        });
+    }
+
+    addEntry(name, score) {
+        if (score <= 0 || !this.initialized) return false;
+
+        // Check if this user already has a higher score?
+        // For simple arcade style, we just push every high score.
+        // OR we can query if this user exists. For MVP, just push.
+
+        try {
+            const { push } = window.firebaseArgs;
+            push(this.scoresRef, {
+                name: name,
+                score: score,
+                date: new Date().toISOString()
+            });
+            console.log("🔥 Score pushed to Firebase!");
+            return true;
+        } catch (e) {
+            console.error("Firebase push failed:", e);
+            return false;
+        }
+    }
+
+    getEntries() {
+        if (!this.initialized) {
+            return [{ name: "Connecting...", score: 0 }];
+        }
+        if (this.localEntries.length === 0) {
+            return [{ name: "No scores yet...", score: 0 }];
+        }
+        return this.localEntries;
+    }
+
+    getGlobalEntries() {
+        return this.getEntries();
+    }
+
+    clear() {
+        // Disabled for global DB to prevent griefing
+        console.warn("Clear disabled for global leaderboard");
+    }
+}
+
+// Initialize systems
+const usernameGen = new UsernameGenerator();
+const leaderboard = new RealTimeLeaderboard();
+
 class MemeGame {
     constructor() {
         // Game state
         this.state = 'menu';
+        this.sensitiveEnabled = false;
         this.score = 0;
         this.combo = 1;
         this.maxCombo = 1;
@@ -66,6 +214,9 @@ class MemeGame {
 
         // High score
         this.highScore = parseInt(localStorage.getItem('brainrotHighScore') || '0');
+
+        // Username
+        this.username = localStorage.getItem('brainrotUsername') || usernameGen.generate();
 
         // DOM elements
         this.screens = {
@@ -192,6 +343,7 @@ class MemeGame {
             this.bindEvents();
             this.initNeuralViz();
             this.updateHighScoreDisplay();
+
             console.log('🧠 Game initialized!');
         } catch (error) {
             console.error('Init error:', error);
@@ -206,27 +358,47 @@ class MemeGame {
             const data = await response.json();
             const memeData = data._default;
 
-            this.memes = Object.values(memeData)
+            // Load ALL memes into a master list
+            this.allMemes = Object.values(memeData)
                 .map(meme => ({
                     id: meme.id,
                     title: meme.title || 'Untitled',
                     image: meme.media,
-                    thumbnail: meme.thumbnail?.thumbnail,
+                    thumbnail: meme.thumbnail?.thumbnail, // Capture thumbnail for NSFW check
                     upvotes: meme.ups || 0,
                     author: meme.author
                 }))
-                .filter(m => m.image && !['nsfw', 'spoiler', 'default', 'self'].includes(m.image));
+                .filter(m => m.image && !['default', 'self'].includes(m.image)); // Only filter truly invalid images
 
-            console.log(`📦 Loaded ${this.memes.length} memes`);
-            this.shuffleMemes();
+            console.log(`📦 Loaded ${this.allMemes.length} total memes`);
+
+            // Apply initial filter
+            this.filterMemes();
+
         } catch (error) {
             console.error('Meme load error:', error);
-            this.memes = [
+            // Fallback
+            this.allMemes = [
                 { id: 1, title: 'Sample Meme 1', image: 'https://i.redd.it/7wgs4dkiihfz.png', upvotes: 87082 },
                 { id: 2, title: 'Sample Meme 2', image: 'https://i.redd.it/65bzzioisir01.jpg', upvotes: 75251 }
             ];
-            this.shuffleMemes();
+            this.filterMemes();
         }
+    }
+
+    filterMemes() {
+        if (this.sensitiveEnabled) {
+            this.memes = [...this.allMemes];
+        } else {
+            this.memes = this.allMemes.filter(m =>
+                !['nsfw', 'spoiler'].includes(m.thumbnail)
+            );
+        }
+
+        console.log(`🔍 Filter active: ${this.memes.length} memes (Sensitive: ${this.sensitiveEnabled})`);
+
+        // Only shuffle if playing or initializing
+        this.shuffleMemes();
     }
 
     initNeuralNetwork() {
@@ -258,13 +430,80 @@ class MemeGame {
         // Buttons
         document.getElementById('start-btn')?.addEventListener('click', () => this.startGame());
         document.getElementById('restart-btn')?.addEventListener('click', () => this.startGame());
+        document.getElementById('home-btn')?.addEventListener('click', () => this.showScreen('splash'));
 
         // Sound toggle
         const soundToggle = document.getElementById('sound-toggle');
         soundToggle?.addEventListener('click', () => {
-            this.soundEnabled = !this.soundEnabled;
-            soundToggle.textContent = this.soundEnabled ? '🔊' : '🔇';
-            soundToggle.classList.toggle('muted', !this.soundEnabled);
+            if (typeof soundEngine !== 'undefined') {
+                soundEngine.init(); // Initialize on first click
+                const enabled = soundEngine.toggle();
+                soundToggle.textContent = enabled ? '🔊' : '🔇';
+                soundToggle.classList.toggle('muted', !enabled);
+                if (enabled) soundEngine.click();
+            }
+        });
+
+        // Username input
+        const usernameInput = document.getElementById('username-input');
+        if (usernameInput) {
+            usernameInput.value = this.username;
+            usernameInput.addEventListener('input', (e) => {
+                this.username = e.target.value.trim() || 'Anonymous';
+                localStorage.setItem('brainrotUsername', this.username);
+            });
+        }
+
+        // Random name generator
+        document.getElementById('random-name-btn')?.addEventListener('click', () => {
+            this.username = usernameGen.generate();
+            if (usernameInput) usernameInput.value = this.username;
+            localStorage.setItem('brainrotUsername', this.username);
+        });
+
+        // Leaderboard modal
+        const leaderboardModal = document.getElementById('leaderboard-modal');
+
+        document.getElementById('leaderboard-btn')?.addEventListener('click', () => {
+            this.renderLeaderboard();
+            leaderboardModal?.classList.add('active');
+        });
+
+        document.getElementById('close-leaderboard')?.addEventListener('click', () => {
+            leaderboardModal?.classList.remove('active');
+        });
+
+        // Close modal on backdrop click
+        leaderboardModal?.addEventListener('click', (e) => {
+            if (e.target === leaderboardModal) {
+                leaderboardModal.classList.remove('active');
+            }
+        });
+
+        // Sensitive Toggle
+        const sensitiveToggle = document.getElementById('sensitive-toggle');
+        if (sensitiveToggle) {
+            sensitiveToggle.addEventListener('change', (e) => {
+                this.sensitiveEnabled = e.target.checked;
+                // Play sound
+                if (typeof soundEngine !== 'undefined') soundEngine.click();
+
+                // Refilter and reload
+                this.filterMemes();
+
+                // If in game, reload current card
+                if (this.state === 'playing') {
+                    this.loadNextMeme();
+                }
+            });
+        }
+
+        // Clear leaderboard
+        document.getElementById('clear-leaderboard')?.addEventListener('click', () => {
+            if (confirm('Are you sure you want to clear the leaderboard?')) {
+                leaderboard.clear();
+                this.renderLeaderboard();
+            }
         });
 
         // Swipe events
@@ -373,6 +612,11 @@ class MemeGame {
         const correct = isDank === swipedDank;
         const userChoice = swipedDank ? 'dank' : 'normie';
 
+        // Play swipe sound
+        if (typeof soundEngine !== 'undefined') {
+            direction === 'right' ? soundEngine.swipeRight() : soundEngine.swipeLeft();
+        }
+
         // Train AI
         if (this.neuralNet) {
             this.neuralNet.train(this.currentMeme, userChoice);
@@ -389,20 +633,31 @@ class MemeGame {
 
             this.showFloatingLabel(`+${points}`, 'positive');
 
+            // Sound and effects for combos
+            if (typeof soundEngine !== 'undefined') {
+                soundEngine.correct();
+            }
+
             if (this.combo >= 3) {
                 this.showFloatingLabel(`${this.combo}x COMBO!`, 'combo');
-                if (this.combo >= 5) this.screenShake();
+                if (typeof soundEngine !== 'undefined') soundEngine.combo(this.combo);
+                if (this.combo >= 5) {
+                    this.screenShake();
+                    if (typeof soundEngine !== 'undefined') soundEngine.fire();
+                }
                 if (this.combo >= 7) this.spawnConfetti();
             }
 
             if (this.correctJudgments % 5 === 0) {
                 this.increaseDifficulty();
+                if (typeof soundEngine !== 'undefined') soundEngine.levelUp();
             }
         } else {
             this.combo = 1;
             this.brainrot = Math.max(0, this.brainrot - 6);
             this.showFloatingLabel('WRONG!', 'negative');
             this.glitchEffect();
+            if (typeof soundEngine !== 'undefined') soundEngine.wrong();
         }
 
         this.memesJudged++;
@@ -712,6 +967,11 @@ class MemeGame {
                 this.elements.timerBar.style.width = `${(this.timeLeft / 60) * 100}%`;
             }
 
+            // Warning tick sound in last 10 seconds
+            if (this.timeLeft <= 10 && typeof soundEngine !== 'undefined') {
+                soundEngine.tick();
+            }
+
             if (this.timeLeft <= 0) {
                 this.endGame();
             }
@@ -730,6 +990,9 @@ class MemeGame {
             localStorage.setItem('brainrotHighScore', this.highScore.toString());
         }
 
+        // Save to leaderboard
+        leaderboard.addEntry(this.username, this.score);
+
         if (this.elements.finalScore) {
             this.elements.finalScore.textContent = this.score.toLocaleString();
         }
@@ -742,6 +1005,9 @@ class MemeGame {
         if (this.elements.highScoreDisplay) {
             this.elements.highScoreDisplay.textContent = this.highScore.toLocaleString();
         }
+
+        // Play game over sound
+        if (typeof soundEngine !== 'undefined') soundEngine.gameOver();
 
         // Verdict
         const accuracy = this.memesJudged > 0 ? this.correctJudgments / this.memesJudged : 0;
@@ -772,6 +1038,7 @@ class MemeGame {
             this.elements.verdict.textContent = verdict;
         }
 
+        this.renderGameoverLeaderboard();
         this.showScreen('gameover');
     }
 
@@ -789,6 +1056,114 @@ class MemeGame {
             this.screens[screenName].classList.add('active');
         }
     }
+
+    renderLeaderboard() {
+        const list = document.getElementById('leaderboard-list');
+        const empty = document.getElementById('leaderboard-empty');
+        const entries = leaderboard.getEntries();
+
+        if (!list || !empty) return;
+
+        if (entries.length === 0) {
+            list.style.display = 'none';
+            empty.style.display = 'block';
+            return;
+        }
+
+        list.style.display = 'flex';
+        empty.style.display = 'none';
+
+        list.innerHTML = entries.map((entry, index) => {
+            const rank = index + 1;
+            let rankClass = '';
+            let rankDisplay = rank;
+            let topClass = '';
+
+            if (rank === 1) {
+                rankClass = 'gold';
+                rankDisplay = '🥇';
+                topClass = 'top-1';
+            } else if (rank === 2) {
+                rankClass = 'silver';
+                rankDisplay = '🥈';
+                topClass = 'top-2';
+            } else if (rank === 3) {
+                rankClass = 'bronze';
+                rankDisplay = '🥉';
+                topClass = 'top-3';
+            }
+
+            const isCurrentUser = entry.name === this.username;
+            const highlight = isCurrentUser ? 'style="border-color: var(--accent);"' : '';
+
+            if (entry.name === "Connecting..." || entry.name === "No scores yet...") {
+                return `
+                    <div class="leaderboard-entry" style="justify-content: center; opacity: 0.7;">
+                        <span class="entry-name" style="text-align: center;">${entry.name}</span>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="leaderboard-entry ${topClass}" ${highlight}>
+                    <span class="entry-rank ${rankClass}">${rankDisplay}</span>
+                    <span class="entry-name">${entry.name}${isCurrentUser ? ' (you)' : ''}</span>
+                    <span class="entry-score">${entry.score.toLocaleString()}</span>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // Render leaderboard on game over screen
+    renderGameoverLeaderboard() {
+        const list = document.getElementById('gameover-leaderboard-list');
+        if (!list) return;
+
+        const entries = leaderboard.getEntries().slice(0, 5);
+
+        if (entries.length === 0) {
+            list.innerHTML = '<p style="color: var(--text-muted); font-size: 0.85rem;">No scores yet!</p>';
+            return;
+        }
+
+        list.innerHTML = entries.map((entry, index) => {
+            const rank = index + 1;
+            let rankDisplay = rank;
+            let rankClass = '';
+            let topClass = '';
+
+            if (rank === 1) { rankDisplay = '🥇'; rankClass = 'gold'; topClass = 'top-1'; }
+            else if (rank === 2) { rankDisplay = '🥈'; rankClass = 'silver'; topClass = 'top-2'; }
+            else if (rank === 3) { rankDisplay = '🥉'; rankClass = 'bronze'; topClass = 'top-3'; }
+
+            const isCurrentUser = entry.name === this.username;
+
+            return `
+                <div class="leaderboard-entry ${topClass}" ${isCurrentUser ? 'style="border-color: var(--accent);"' : ''}>
+                    <span class="entry-rank ${rankClass}">${rankDisplay}</span>
+                    <span class="entry-name">${entry.name}${isCurrentUser ? ' (you)' : ''}</span>
+                    <span class="entry-score">${entry.score.toLocaleString()}</span>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // ========== ORACLE MODE ==========
+
+    startOracle() {
+        memeOracle.reset();
+        this.updateOracleUI();
+        document.getElementById('oracle-thinking').style.display = 'none';
+        document.getElementById('oracle-result').style.display = 'none';
+        document.querySelector('.oracle-question-box').style.display = 'block';
+        document.querySelector('.oracle-buttons').style.display = 'flex';
+        this.showScreen('oracle');
+        if (typeof soundEngine !== 'undefined') soundEngine.click();
+    }
+
+    // Oracle methods removed per user request
+    oracleAnswer() { return; }
+    oracleResult() { return; }
 }
 
 // Initialize
